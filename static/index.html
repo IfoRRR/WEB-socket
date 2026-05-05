@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Awesome Chat</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="header">
+      <h1>Awesome WebSocket Chat</h1>
+      <p>Комната: <strong>{{ room }}</strong> · Пользователь: <strong>{{ username }}</strong></p>
+    </header>
+
+    <section class="panel">
+      <div class="control-row">
+        <label>
+          Комната
+          <input v-model="room" placeholder="general" />
+        </label>
+        <label>
+          Имя
+          <input v-model="username" placeholder="anonymous" />
+        </label>
+        <button @click="connected ? disconnect() : connect()" class="btn">
+          {{ connected ? 'Отключиться' : 'Подключиться' }}
+        </button>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Статус:</span>
+        <span :class="['status', connected ? 'status-ok' : 'status-bad']">{{ status }}</span>
+      </div>
+    </section>
+
+    <section class="messages-panel">
+      <div class="messages">
+        <template v-if="messages.length">
+          <div class="message" v-for="(msg, index) in messages" :key="index">
+            <div class="message-header">
+              <span class="message-user">{{ msg.username }}</span>
+              <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
+            </div>
+            <div class="message-text">{{ msg.text }}</div>
+          </div>
+        </template>
+        <div class="empty" v-else>
+          Чат пуст. Подключитесь и отправьте первое сообщение.
+        </div>
+      </div>
+    </section>
+
+    <section class="send-panel">
+      <input
+        v-model="message"
+        @keyup.enter="sendMessage"
+        :disabled="!connected"
+        placeholder="Введите сообщение..."
+      />
+      <button @click="sendMessage" class="btn" :disabled="!connected || !message.trim()">Отправить</button>
+    </section>
+
+    <footer class="footer">
+      <p>WebSocket URL: <code>{{ wsUrl }}</code></p>
+      <p>Сервер работает на <strong>/ws?room=&lt;room&gt;&username=&lt;username&gt;</strong></p>
+    </footer>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          room: 'general',
+          username: 'anonymous',
+          message: '',
+          messages: [],
+          ws: null,
+          connected: false,
+          status: 'Не подключено',
+        };
+      },
+      computed: {
+        wsUrl() {
+          const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+          return `${protocol}//${location.host}/ws?room=${encodeURIComponent(this.room)}&username=${encodeURIComponent(this.username)}`;
+        },
+      },
+      methods: {
+        connect() {
+          if (this.connected) return;
+          this.status = 'Подключение...';
+
+          try {
+            this.ws = new WebSocket(this.wsUrl);
+          } catch (error) {
+            this.status = 'Ошибка подключения';
+            console.error(error);
+            return;
+          }
+
+          this.ws.addEventListener('open', () => {
+            this.connected = true;
+            this.status = 'Подключено';
+            this.addSystemMessage('Подключение установлено.');
+          });
+
+          this.ws.addEventListener('message', (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              this.messages.push(msg);
+              this.scrollToBottom();
+            } catch (error) {
+              console.error('Invalid WS message', error);
+            }
+          });
+
+          this.ws.addEventListener('close', () => {
+            this.connected = false;
+            this.status = 'Отключено';
+            this.addSystemMessage('Соединение закрыто.');
+          });
+
+          this.ws.addEventListener('error', () => {
+            this.status = 'Ошибка WebSocket';
+            console.error('WebSocket error');
+          });
+        },
+        disconnect() {
+          if (!this.ws) return;
+          this.ws.close();
+          this.ws = null;
+          this.connected = false;
+          this.status = 'Отключено';
+        },
+        sendMessage() {
+          const text = this.message.trim();
+          if (!text || !this.connected || !this.ws) return;
+
+          this.ws.send(JSON.stringify({ text }));
+          this.message = '';
+        },
+        addSystemMessage(text) {
+          this.messages.push({ username: 'Система', text, timestamp: new Date().toISOString() });
+          this.scrollToBottom();
+        },
+        formatTime(value) {
+          if (!value) return '';
+          const date = new Date(value);
+          return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        },
+        scrollToBottom() {
+          this.$nextTick(() => {
+            const container = document.querySelector('.messages');
+            if (container) container.scrollTop = container.scrollHeight;
+          });
+        },
+      },
+    }).mount('#app');
+  </script>
+</body>
+</html>

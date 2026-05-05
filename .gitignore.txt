@@ -1,0 +1,8 @@
+# Go
+*.exe
+*.exe~
+
+# Vue
+node_modules/
+dist/
+.env
