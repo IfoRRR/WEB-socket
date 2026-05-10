@@ -13,8 +13,6 @@ WebSocket-based real-time chat server на Go с поддержкой комна
 - **internal/server** - HTTP сервер и обработчики
 - **static/** - фронтенд на HTML/CSS
 
-📖 Подробнее: [ARCHITECTURE.md](ARCHITECTURE.md) | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
-
 ## ✨ Функции
 
 ✅ **WebSocket чат** - реал-тайм сообщения с поддержкой комнат  
@@ -33,14 +31,6 @@ WebSocket-based real-time chat server на Go с поддержкой комна
 ## 🚀 Использование
 
 ### Сборка и запуск
-
-**С помощью Make:**
-```bash
-make deps    # Загрузить зависимости
-make run     # Собрать и запустить
-# или
-make dev     # Запустить в режиме разработки
-```
 
 **Напрямую:**
 ```bash
@@ -196,8 +186,6 @@ awesomeProject17/
 ├── PROJECT_STRUCTURE.md        # Структура проекта
 └── Makefile                    # Команды сборки
 ```
-
-Для подробного описания архитектуры см. [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## 🔧 Разработка
 
